@@ -1,0 +1,55 @@
+sudo: required
+dist: trusty
+language: cpp
+
+matrix:
+  include:
+  - compiler: gcc
+    env:
+      - MPI=mpich2
+    addons:
+      apt:
+        packages:
+          - gcc-4.8
+          - g++-4.8
+          - gfortran-4.8
+          - libstdc++-4.8-dev
+  - compiler: gcc
+    env:
+      - MPI=openmpi
+    addons:
+      apt:
+        packages:
+          - gcc-4.8
+          - g++-4.8
+          - gfortran-4.8
+          - libstdc++-4.8-dev
+  - compiler: clang
+    env:
+      - MPI=mpich2
+    addons:
+      apt:
+        packages:
+          - clang-3.6
+
+notifications:
+  email: false
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq -y mpich2
+  - sudo apt-get install -qq -y python-dev python-setuptools libopenblas-base libopenblas-dev libboost1.55-all-dev
+  - sudo apt-get install -qq -y python-numpy python-scipy python-matplotlib
+  - sudo easy_install mpi4py
+  - sudo apt-get install -qq -y libhdf5-serial-dev libfftw3-dev libfftw3-mpi-dev
+  - sudo easy_install h5py
+  - sudo apt-get install -qq -y doxygen graphviz python-sphinx dvipng openjdk-7-jdk unzip
+  - sudo easy_install numpydoc
+  - curl https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz | sudo tar -x -z --strip-components 1 -C /usr
+
+script:
+  - ./script/build
+
+after_success:
+  - if [ $TRAVIS_BRANCH == 'development' ]; then ./script/deploy-development; fi
+  - if [ $TRAVIS_BRANCH == 'master' ]; then ./script/deploy-stable; fi
