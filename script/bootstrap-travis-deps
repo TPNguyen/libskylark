@@ -1,0 +1,61 @@
+#!/bin/bash
+set -e
+
+mkdir -p $HOME/deps
+
+#if [ ! -d "deps/Random123-1.08" ]; then
+    #cd $HOME/deps
+    #wget http://www.thesalmons.org/john/random123/releases/1.08/Random123-1.08.tar.gz &> /dev/null
+    #tar xvfz Random123-1.08.tar.gz
+    #if [ $? -ne 0 ]; then
+        #echo "Unable to install Random123"
+        #exit 1
+    #fi
+
+    #calc_md5=$(md5sum Random123-1.08.tar.gz | /usr/bin/cut -f 1 -d " ")
+    #if [ "$calc_md5" != "87d2783831c7a95b244868bf754a7f50" ]; then
+        #echo "Random123 failed checksum check"
+        #exit 1
+    #fi
+
+    #rm Random123-1.08.tar.gz
+#fi
+
+if [ ! -d "deps/Elemental" ]; then
+    pushd $HOME/deps
+    git clone https://github.com/elemental/Elemental.git Elemental
+    if [ $? -ne 0 ]; then
+        echo "Unable to clone Elemental"
+        popd
+        exit 1
+    fi
+
+    cd Elemental
+    git checkout 71fce6e65c065e0b2f993435ca7524db7f54fa6f
+    mkdir build
+    cd build
+    cmake -DEL_USE_64BIT_INTS=ON \
+        -DEL_HAVE_QUADMATH=OFF -DCMAKE_BUILD_TYPE=Release -DEL_HYBRID=ON \
+        -DBUILD_SHARED_LIBS=ON -DMATH_LIBS="-L/usr/lib -llapack -lopenblas -lm" \
+        -DEL_DISABLE_VALGRIND=ON -DCMAKE_INSTALL_PREFIX=../install ../
+    if [ $? -ne 0 ]; then
+        echo "Unable to configure Elemental"
+        popd
+        exit 1
+    fi
+
+    make
+    if [ $? -ne 0 ]; then
+        echo "Unable to compile Elemental"
+        popd
+        exit 1
+    fi
+
+    make install 1> /dev/null
+    if [ $? -ne 0 ]; then
+        echo "Unable to install Elemental under $HOME/deps/Elemental/install"
+        popd
+        exit 1
+    fi
+    popd
+fi

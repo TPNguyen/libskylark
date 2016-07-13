@@ -2,11 +2,17 @@ sudo: required
 dist: trusty
 language: cpp
 
+#cache:
+  #directories:
+  #- $HOME/deps
+
+#FIXME: set root directories for libs
+
 matrix:
   include:
   - compiler: gcc
     env:
-      - MPI=mpich2
+      - MPI=/usr/include/mpich
     addons:
       apt:
         packages:
@@ -14,40 +20,54 @@ matrix:
           - g++-4.8
           - gfortran-4.8
           - libstdc++-4.8-dev
-  - compiler: gcc
-    env:
-      - MPI=openmpi
-    addons:
-      apt:
-        packages:
-          - gcc-4.8
-          - g++-4.8
-          - gfortran-4.8
-          - libstdc++-4.8-dev
-  - compiler: clang
-    env:
-      - MPI=mpich2
-    addons:
-      apt:
-        packages:
-          - clang-3.6
+          - mpich2
+          - libmpich2-dev
+  #- compiler: gcc
+    #env:
+      #- MPI=/usr/lib/openmpi/include
+    #addons:
+      #apt:
+        #packages:
+          #- gcc-4.8
+          #- g++-4.8
+          #- gfortran-4.8
+          #- libstdc++-4.8-dev
+  #- compiler: clang
+    #env:
+      #- MPI=/usr/include/mpich
+    #addons:
+      #apt:
+        #packages:
+          #- clang-3.6
+          #- mpich2
+          #- libmpich2-dev
 
 notifications:
   email: false
 
 before_install:
+  - test -n $CC  && unset CC
+  - test -n $CXX && unset CXX
   - sudo apt-get update -qq
-  - sudo apt-get install -qq -y mpich2
+  - sudo apt-get install -qq -y dpkg
+  - sudo update-alternatives --set mpi $MPI
+  - sudo apt-get install -qq -y libblas-dev libblas3gf liblapack-dev liblapack3gf
   - sudo apt-get install -qq -y python-dev python-setuptools libopenblas-base libopenblas-dev libboost1.55-all-dev
   - sudo apt-get install -qq -y python-numpy python-scipy python-matplotlib
-  - sudo easy_install mpi4py
   - sudo apt-get install -qq -y libhdf5-serial-dev libfftw3-dev libfftw3-mpi-dev
-  - sudo easy_install h5py
   - sudo apt-get install -qq -y doxygen graphviz python-sphinx dvipng openjdk-7-jdk unzip
-  - sudo easy_install numpydoc
-  - curl https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz | sudo tar -x -z --strip-components 1 -C /usr
+  - sudo pip install Cython
+  - sudo easy_install mpi4py h5py numpydoc
 
+install:
+  - curl https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz | sudo tar -x -z --strip-components 1 -C /usr
+  - curl http://www.thesalmons.org/john/random123/releases/1.08/Random123-1.08.tar.gz | sudo tar -x -z --strip-components 1 -C /usr/local
+
+#FIXME: install Elemental from DEB. It takes way too long if we have to build
+#       it from source (1333s)!
 script:
+  - ./script/bootstrap-travis-deps
+  - export ELEMENTAL_ROOT=$HOME/deps/Elemental/install
   - ./script/build
 
 after_success:
